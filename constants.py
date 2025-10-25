@@ -1,0 +1,47 @@
+## Presets
+# Screen
+WIDTH, HEIGHT = 800, 999
+WHITE = (248,248,248)
+BLACK = (18, 18, 19)
+GREY = (58,58,60)
+GREEN = (83,141,78)
+YELLOW = (181,159,59)
+
+# Tiles
+TILE_SIZE = 100
+MARGIN = 10
+GRID_ROWS = 6
+GRID_COLS = 5
+
+TILE_BORDER_COLOR = (129,131,132)
+GRID_WIDTH = (TILE_SIZE * GRID_COLS) + (MARGIN * (GRID_COLS - 1))
+
+START_X = (WIDTH - GRID_WIDTH) // 2
+START_Y = 50
+
+# Letters
+LETTER_COLOR = (248,248,248)
+
+# On-screen keyboard
+KEY_COLOR = (129,131,132)
+KEY_WIDTH = 50
+KEY_HEIGHT = 65
+KEY_MARGIN = 6
+SPECIAL_KEY_WIDTH = 90
+
+KEYBOARD_LAYOUT = ["Q W E R T Y U I O P".split(), 
+                   "A S D F G H J K L".split(),
+                   ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "DEL"]]
+
+KEYBOARD_START_Y = 750
+
+# Frame/Time presets
+TILE_ANIMATION_TIME = 200
+
+# Shaking animation
+SHAKE_DURATION = 400
+SHAKE_MAGNITUDE = 5
+SHAKE_FREQUENCY = 10
+
+# Reveal jump animation
+JUMP_HEIGHT = 20
