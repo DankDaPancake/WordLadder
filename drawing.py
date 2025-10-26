@@ -8,6 +8,8 @@ LETTER_FONT = pygame.font.SysFont(None, 60)
 MESSAGE_FONT = pygame.font.SysFont(None, 50)
 KEY_FONT = pygame.font.SysFont(None, 40)
 
+TARGET_FONT = pygame.font.SysFont(None, 40)
+
 def create_key_rects():
     key_rects = {}
     
@@ -124,16 +126,16 @@ def draw_grid(SCREEN, grid_data, grid_results, current_row, shake_offset_x,
                 
                 SCREEN.blit(text_surface, text_rect)
 
-def draw_game_over_screen(SCREEN, did_win, secret_word):
+def draw_game_over_screen(SCREEN, did_win, target_word):
     overlay = pygame.Surface((const.WIDTH, const.HEIGHT))
     overlay.set_alpha(100)
     overlay.fill(const.WHITE)
     SCREEN.blit(overlay, (0, 0))
     
     if did_win:
-        message = "You win!"
+        message = "You solve the ladder!"
     else:
-        message = f"You lose! Word was: {secret_word}"
+        message = f"Out of steps! Word was: {target_word}"
     
     # Display main message
     text_surface = MESSAGE_FONT.render(message, True, const.BLACK)
@@ -144,3 +146,13 @@ def draw_game_over_screen(SCREEN, did_win, secret_word):
     prompt_surface = MESSAGE_FONT.render("Press ENTER to Play Again", True, const.GREY)
     promp_rect = prompt_surface.get_rect(center = (const.WIDTH // 2, const.HEIGHT // 2 + 20))
     SCREEN.blit(prompt_surface, promp_rect)
+    
+def draw_target_display(SCREEN, start_word, target_word):
+    start_text = TARGET_FONT.render(f"Start: {start_word}", True, const.BLACK)
+    target_text = TARGET_FONT.render(f"Target: {target_word}", True, const.BLACK)
+    
+    start_rect = start_text.get_rect(center = (const.WIDTH // 2, 30))
+    target_rect = target_text.get_rect(center = (const.WIDTH // 2, 70))
+    
+    SCREEN.blit(start_text, start_rect)
+    SCREEN.blit(target_text, target_rect)

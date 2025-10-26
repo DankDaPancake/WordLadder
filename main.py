@@ -18,19 +18,20 @@ def main():
     try:
         word_list = game_logic.load_word_list(os.path.join(os.path.dirname(__file__), "dictionary.txt"))
     except FileNotFoundError:
-        print("ERROR. wordlist.txt not found! Exiting.")
+        print("ERROR. dictionary.txt not found! Exiting.")
         sys.exit()
         
     key_rects = drawing.create_key_rects()
     
-    (secret_word, grid_data, grid_results, 
+    (start_word, target_word, grid_data, grid_results, 
     current_row, current_col,
     game_over, did_win, key_status,
     is_animating, animation_start_time, animation_tile_index, 
     current_guess_results, current_guess_word,
     is_shaking, shake_start_time) = game_logic.reset_game(word_list)
+    print("Reach 1")
     
-    running = True
+    running = False
     clock = pygame.time.Clock()
     # Game loop
     while running:
@@ -45,46 +46,11 @@ def main():
                 sine_wave = math.sin(progress * math.pi * const.SHAKE_FREQUENCY) # x = sin(t * 3.14 * f)
                 shake_offset_x = int(sine_wave * const.SHAKE_MAGNITUDE)
                 
-        if is_animating:
-            current_time = pygame.time.get_ticks()
-            elapsed_time = current_time - animation_start_time
-            
-            # Current tile to flip
-            current_tile_to_reveal = elapsed_time // const.TILE_ANIMATION_TIME
-            
-            while animation_tile_index <= current_tile_to_reveal and animation_tile_index < const.GRID_COLS:
-                letter = grid_data[current_row][animation_tile_index]
-                result = current_guess_results[animation_tile_index]
-                
-                # Update mid-animation tile state
-                grid_results[current_row][animation_tile_index] = result
-                
-                status_priority = {"green": 3, "yellow": 2, "grey": 1, "empty": 0}
-                current_priority = status_priority[key_status[letter]]
-                new_priority = status_priority[result]
-                if new_priority > current_priority:
-                    key_status[letter] = result
-                
-                animation_tile_index += 1
-                
-            if animation_tile_index >= const.GRID_COLS:
-                is_animating = False
-                
-                if current_guess_word == secret_word:
-                    game_over = True
-                    did_win = True
-                
-                current_row += 1
-                current_col = 0
-                
-                if current_row == const.GRID_ROWS and not did_win:
-                    game_over = True
-        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             
-            if not is_animating and not is_shaking:
+            if not is_shaking:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     if not game_over:
                         for char, rect in key_rects.items():
@@ -100,7 +66,7 @@ def main():
                                             is_animating = True
                                             animation_start_time = pygame.time.get_ticks()
                                             animation_tile_index = 0
-                                            current_guess_results = game_logic.check_guess(current_guess_word, secret_word)
+                                            current_guess_results = game_logic.get_color_hints(current_guess_word, target_word)
                                 
                                 elif char == "DEL":
                                     if current_col > 0:
@@ -112,7 +78,6 @@ def main():
                                         grid_data[current_row][current_col] = char
                                         current_col += 1
                                     
-                                
                 if event.type == pygame.KEYDOWN:
                     
                     # Player pressed BACKSPACE:
@@ -124,7 +89,7 @@ def main():
                     # Player pressed ENTER
                     elif event.key == pygame.K_RETURN:
                         if game_over:
-                            (secret_word, grid_data, grid_results, 
+                            (start_word, target_word, grid_data, grid_results, 
                             current_row, current_col, 
                             game_over, did_win, key_status,
                             is_animating, animation_start_time, animation_tile_index, 
@@ -133,17 +98,38 @@ def main():
                             
                         elif current_col == const.GRID_COLS:                        
                             # Get the entered guess word
-                            current_guess_word = "".join(grid_data[current_row])
+                            new_guess = "".join(grid_data[current_row])
+                            previous_word = "".join(grid_data[current_row - 1])
                             
-                            if current_guess_word not in word_list:
+                            if game_logic.is_valid_step(previous_word, new_guess, word_list):
+                                results = game_logic.get_color_hints(new_guess, target_word)
+                                grid_results[current_row] = results
+                                
+                                status_priority = {"green": 3, "yellow": 2, "grey": 1, "empty": 0}
+                                for i, letter in enumerate(new_guess):
+                                    new_status = results[i]
+                                    
+                                    current_priority = status_priority[key_status[letter]]
+                                    new_priority = status_priority[new_status]
+                                    
+                                    if new_priority > current_priority:
+                                        key_status[letter] = new_status
+                                    
+                                if new_guess == target_word:
+                                    game_over = True
+                                    did_win = True
+                                
+                                current_row += 1
+                                current_col = 0
+                                
+                                if current_row == const.GRID_ROWS and not did_win:
+                                    game_over = True
+                                    did_win = False
+                                
+                            else:                                
                                 is_shaking = True
                                 shake_start_time = pygame.time.get_ticks()
-                            else:                                
-                                is_animating = True
-                                animation_start_time = pygame.time.get_ticks()
-                                animation_tile_index = 0
-                                current_guess_results = game_logic.check_guess(current_guess_word, secret_word)
-                    
+                                
                     # Player pressed a letter
                     elif event.unicode.isalpha() and not game_over:
                         char = event.unicode.upper()
@@ -153,13 +139,15 @@ def main():
                                 current_col += 1
         
         SCREEN.fill(const.BLACK)
+        drawing.draw_target_display(SCREEN, start_word, target_word)
+        
         drawing.draw_grid(SCREEN, grid_data, grid_results, current_row, shake_offset_x, 
                           is_animating, animation_tile_index, animation_start_time)
         
         drawing.draw_keyboard(SCREEN, key_rects, key_status)
         
         if game_over:
-            drawing.draw_game_over_screen(SCREEN, did_win, secret_word)
+            drawing.draw_game_over_screen(SCREEN, did_win, target_word)
         
         pygame.display.flip()
         clock.tick(60)
