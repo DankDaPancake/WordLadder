@@ -1,4 +1,5 @@
 import pygame
+
 import constants as const 
 
 ## Initialize application
@@ -46,7 +47,6 @@ def create_key_rects():
         
     return key_rects
     
-    
 def draw_target_display(SCREEN, start_word, target_word):
     start_text = TARGET_FONT.render(f"Start: {start_word}", True, const.WHITE)
     target_text = TARGET_FONT.render(f"Target: {target_word}", True, const.WHITE)
@@ -58,13 +58,18 @@ def draw_target_display(SCREEN, start_word, target_word):
     SCREEN.blit(target_text, target_rect)
 
 def draw_grid(SCREEN, grid_data, grid_results):
+    word_length = len(grid_data[0])
+    
+    grid_width = (const.TILE_SIZE * word_length) + (const.MARGIN * (word_length - 1))
+    start_x = (const.WIDTH - grid_width) // 2
+    
     for row in range(const.GRID_ROWS):
-        for col in range(const.GRID_COLS):
+        for col in range(word_length):
             letter = grid_data[row][col]
             result = grid_results[row][col]
             
             # Position of current tile
-            x = const.START_X + col * (const.TILE_SIZE + const.MARGIN)
+            x = start_x + col * (const.TILE_SIZE + const.MARGIN)
             y = const.START_Y + row * (const.TILE_SIZE + const.MARGIN)
             
             # Tile's information to be drew on canvas
@@ -147,3 +152,46 @@ def draw_hint_button(SCREEN, hints_left):
     text_surface = HINT_FONT.render(text_str, True, const.WHITE)
     text_rect = text_surface.get_rect(center = const.HINT_BUTTON_RECT.center)
     SCREEN.blit(text_surface, text_rect)
+
+def draw_main_menu(SCREEN):
+    SCREEN.fill(const.BLACK)
+    
+    # Title
+    title_text = MESSAGE_FONT.render("Word Ladder", True, const.WHITE)
+    title_rect = title_text.get_rect(center = (const.WIDTH // 2, 150))
+    SCREEN.blit(title_text, title_rect)
+    
+    # Play Button
+    pygame.draw.rect(SCREEN, const.GREEN, const.PLAY_BUTTON_RECT, border_radius = 10)
+    play_text = MESSAGE_FONT.render("PLAY", True, const.WHITE)
+    play_rect = play_text.get_rect(center = const.PLAY_BUTTON_RECT.center)
+    SCREEN.blit(play_text, play_rect)
+    
+    # Quit Button
+    pygame.draw.rect(SCREEN, const.KEY_COLOR, const.QUIT_BUTTON_RECT, border_radius = 10)
+    quit_text = MESSAGE_FONT.render("QUIT", True, const.WHITE)
+    quit_rect = quit_text.get_rect(center = const.QUIT_BUTTON_RECT.center)
+    SCREEN.blit(quit_text, quit_rect)
+
+def draw_length_selector(SCREEN):
+    overlay = pygame.Surface((const.WIDTH, const.HEIGHT))
+    overlay.set_alpha(20)
+    overlay.fill(const.GREY)
+    SCREEN.blit(overlay, (0, 0))
+
+    title_text = MESSAGE_FONT.render("Select Word Length", True, const.WHITE)
+    title_rect = title_text.get_rect(center = (const.WIDTH // 2, 150))
+    SCREEN.blit(title_text, title_rect)
+    
+    for i, rect in enumerate(const.LENGTH_BUTTON_RECTS):
+        word_length = i + 4
+        pygame.draw.rect(SCREEN, const.KEY_COLOR, rect, border_radius = 5)
+        text = MESSAGE_FONT.render(str(word_length), True, const.BLACK)
+        text_rect = text.get_rect(center = rect.center)
+        SCREEN.blit(text, text_rect)
+    
+def draw_back_button(SCREEN):
+    pygame.draw.rect(SCREEN, const.KEY_COLOR, const.BACK_BUTTON_RECT, border_radius = 5)
+    text = HINT_FONT.render("Back to Menu", True, const.WHITE)
+    text_rect = text.get_rect(center = const.BACK_BUTTON_RECT.center)
+    SCREEN.blit(text, text_rect)

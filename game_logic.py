@@ -5,18 +5,17 @@ from collections import Counter
 
 import constants as const
 
-def load_word_list(filename):
+def load_word_list(word_length):
+    
+    filename = f"word_data/wordlist_{word_length:02d}.txt"
+    
     with open(filename) as f:
-        for line in f:
-            lenfile = "wordlist" + str(len(line)) + ".txt"
-            with open(os.path.join(os.path.dirname(__file__), lenfile), 'w') as out:
-                out.write(line.strip().upper())
-        # words = [line.strip().upper() for line in f]
+        words = [line.strip().upper() for line in f]
     # return words
-    return None
+    return words
 
 def get_color_hints(guess_word, target_word):
-    results = ["grey"] * const.GRID_COLS
+    results = ["grey"] * len(target_word)
     target_counts = Counter(target_word)
     
     for i in range(len(guess_word)):
@@ -55,21 +54,21 @@ def is_valid_step(previous_word, new_guess, word_list):
     
     return True
 
-def reset_game(word_list):
+def reset_game(word_list, word_length):
     # Initialize data for new game
-    
     start_word = random.choice(word_list)
-    while len(start_word) != const.GRID_COLS:
-        start_word = random.choice(word_list)
     
+    path_length = random.randint(4, 7)    
+    current_word = start_word
+    path = [start_word]
     target_word = random.choice(word_list)
     while start_word == target_word:
         target_word = random.choice(word_list)
         
     print(f"Start: {start_word} | Target: {target_word}")
     
-    grid_data = [["" for _ in range(const.GRID_COLS)] for _ in range(const.GRID_ROWS)]
-    grid_results = [["empty" for _ in range(const.GRID_COLS)] for _ in range(const.GRID_ROWS)]
+    grid_data = [["" for _ in range(word_length)] for _ in range(const.GRID_ROWS)]
+    grid_results = [["empty" for _ in range(word_length)] for _ in range(const.GRID_ROWS)]
 
     grid_data[0] = list(start_word)
     grid_results[0] = get_color_hints(start_word, target_word)
@@ -98,24 +97,7 @@ def reset_game(word_list):
             hints_left)
     
 def find_next_step(previous_word, target_word, word_list):
-    alphabet = string.ascii_uppercase
-    
-    possible_steps = []
-    
-    for i in range(len(previous_word)):
-        original_char = previous_word[i]
-        
-        for letter in alphabet:
-            if letter in original_char:
-                continue
-            
-            new_guess = list(previous_word)
-            new_guess[i] = letter
-            new_guess = "".join(new_guess)
-            
-            if new_guess in word_list:
-                possible_steps.append(new_guess)
-    
+    possible_steps = find_all_step(previous_word, word_list)
     if not possible_steps:
         return None
     
@@ -139,3 +121,25 @@ def find_next_step(previous_word, target_word, word_list):
             best_step = step
             
     return best_step
+
+def find_all_step(previous_word, word_list):
+    alphabet = string.ascii_uppercase
+    
+    possible_steps = set()
+    
+    for i in range(len(previous_word)):
+        original_char = previous_word[i]
+        
+        for letter in alphabet:
+            if letter in original_char:
+                continue
+            
+            new_guess = list(previous_word)
+            new_guess[i] = letter
+            new_guess = "".join(new_guess)
+            
+            if new_guess in word_list:
+                possible_steps.append(new_guess)
+    
+    return list(possible_steps)
+
