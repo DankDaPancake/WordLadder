@@ -1,14 +1,23 @@
 import pygame
-import math
 import constants as const 
 
 ## Initialize application
 pygame.font.init()
-LETTER_FONT = pygame.font.SysFont(None, 60)
-MESSAGE_FONT = pygame.font.SysFont(None, 50)
-KEY_FONT = pygame.font.SysFont(None, 40)
+LETTER_FONT = None
+MESSAGE_FONT = None
+KEY_FONT = None
+TARGET_FONT = None
+SPECIAL_KEY_FONT = None
+HINT_FONT = None
 
-TARGET_FONT = pygame.font.SysFont(None, 40)
+def initialize_fonts():
+    global LETTER_FONT, MESSAGE_FONT, KEY_FONT, TARGET_FONT, SPECIAL_KEY_FONT, HINT_FONT
+    LETTER_FONT = pygame.font.SysFont(None, const.LETTER_FONT_SIZE)
+    MESSAGE_FONT = pygame.font.SysFont(None, const.MESSAGE_FONT_SIZE)
+    KEY_FONT = pygame.font.SysFont(None, const.KEY_FONT_SIZE)
+    TARGET_FONT = pygame.font.SysFont(None, const.LETTER_FONT_SIZE)
+    SPECIAL_KEY_FONT = pygame.font.SysFont(None, 20)
+    HINT_FONT = pygame.font.SysFont(None, const.HINT_FONT_SIZE)
 
 def create_key_rects():
     key_rects = {}
@@ -37,61 +46,26 @@ def create_key_rects():
         
     return key_rects
     
-
-def draw_keyboard(SCREEN, key_rects, key_status):
     
-    special_key_font = pygame.font.SysFont(None, 30)
+def draw_target_display(SCREEN, start_word, target_word):
+    start_text = TARGET_FONT.render(f"Start: {start_word}", True, const.WHITE)
+    target_text = TARGET_FONT.render(f"Target: {target_word}", True, const.WHITE)
     
-    for key_char, key_rect in key_rects.items():
-        status = key_status[key_char]
-        
-        if status == "green":
-            tile_color = const.GREEN
-            letter_color = const.WHITE
-        elif status == "yellow":
-            tile_color = const.YELLOW
-            letter_color = const.WHITE
-        elif status == "grey":
-            tile_color = const.GREY
-            letter_color = const.WHITE
-        else:
-            tile_color = const.KEY_COLOR
-            letter_color = const.WHITE
-            
-        pygame.draw.rect(SCREEN, tile_color, key_rect, border_radius = 7)
-        
-        if len(key_char) > 1:
-            text_surface = special_key_font.render(key_char, True, letter_color)
-        else:
-            text_surface = KEY_FONT.render(key_char, True, letter_color)
-        
-        text_rect = text_surface.get_rect(center = key_rect.center)
-        SCREEN.blit(text_surface, text_rect)
+    start_rect = start_text.get_rect(center = (const.WIDTH // 2, 30))
+    target_rect = target_text.get_rect(center = (const.WIDTH // 2, 70))
+    
+    SCREEN.blit(start_text, start_rect)
+    SCREEN.blit(target_text, target_rect)
 
-def draw_grid(SCREEN, grid_data, grid_results, current_row, shake_offset_x, 
-              is_animating, animation_tile_index, animation_start_time):
+def draw_grid(SCREEN, grid_data, grid_results):
     for row in range(const.GRID_ROWS):
         for col in range(const.GRID_COLS):
-            current_shake = 0
-            if row == current_row and shake_offset_x != 0:
-                current_shake = shake_offset_x
+            letter = grid_data[row][col]
+            result = grid_results[row][col]
             
             # Position of current tile
-            x = const.START_X + col * (const.TILE_SIZE + const.MARGIN) + current_shake
+            x = const.START_X + col * (const.TILE_SIZE + const.MARGIN)
             y = const.START_Y + row * (const.TILE_SIZE + const.MARGIN)
-            
-            if is_animating and row == current_row:
-                if col < animation_tile_index:
-                    pass
-                elif col == animation_tile_index:
-                    current_time = pygame.time.get_ticks()
-                    time_since_start = current_time - animation_start_time
-                    
-                    tile_elapsed = time_since_start % const.TILE_ANIMATION_TIME
-                    
-                    progress = tile_elapsed / const.TILE_ANIMATION_TIME
-                    jump = math.sin(progress * math.pi) * const.JUMP_HEIGHT
-                    y -= int(jump)
             
             # Tile's information to be drew on canvas
             tile_rect = pygame.Rect(x, y, const.TILE_SIZE, const.TILE_SIZE)
@@ -99,19 +73,15 @@ def draw_grid(SCREEN, grid_data, grid_results, current_row, shake_offset_x,
             tile_color = const.BLACK
             letter_color = const.WHITE
             border_color = const.TILE_BORDER_COLOR
-            result = grid_results[row][col]
             
             if result == "green":
                 tile_color = const.GREEN
-                letter_color = const.WHITE
                 border_color = const.GREEN
             elif result == "yellow":
                 tile_color = const.YELLOW
-                letter_color = const.WHITE
                 border_color = const.YELLOW
             elif result == "grey":
                 tile_color = const.GREY
-                letter_color = const.WHITE
                 border_color = const.GREY
             
             # Draw current tile onto canvas
@@ -119,12 +89,35 @@ def draw_grid(SCREEN, grid_data, grid_results, current_row, shake_offset_x,
             if result == "empty":
                 pygame.draw.rect(SCREEN, border_color, tile_rect, 2, border_radius = 3)
             
-            letter = grid_data[row][col]
             if letter != " ":
                 text_surface = LETTER_FONT.render(letter, True, letter_color)
                 text_rect = text_surface.get_rect(center = tile_rect.center)
                 
                 SCREEN.blit(text_surface, text_rect)
+
+def draw_keyboard(SCREEN, key_rects, key_status):
+    
+    for key_char, key_rect in key_rects.items():
+        status = key_status[key_char]
+        
+        tile_color = const.KEY_COLOR
+        letter_color = const.WHITE
+        if status == "green":
+            tile_color = const.GREEN
+        elif status == "yellow":
+            tile_color = const.YELLOW
+        elif status == "grey":
+            tile_color = const.GREY
+            
+        pygame.draw.rect(SCREEN, tile_color, key_rect, border_radius = 7)
+        
+        if len(key_char) > 1:
+            text_surface = SPECIAL_KEY_FONT.render(key_char, True, letter_color)
+        else:
+            text_surface = KEY_FONT.render(key_char, True, letter_color)
+        
+        text_rect = text_surface.get_rect(center = key_rect.center)
+        SCREEN.blit(text_surface, text_rect)
 
 def draw_game_over_screen(SCREEN, did_win, target_word):
     overlay = pygame.Surface((const.WIDTH, const.HEIGHT))
@@ -146,13 +139,11 @@ def draw_game_over_screen(SCREEN, did_win, target_word):
     prompt_surface = MESSAGE_FONT.render("Press ENTER to Play Again", True, const.GREY)
     promp_rect = prompt_surface.get_rect(center = (const.WIDTH // 2, const.HEIGHT // 2 + 20))
     SCREEN.blit(prompt_surface, promp_rect)
+
+def draw_hint_button(SCREEN, hints_left):
+    pygame.draw.rect(SCREEN, const.KEY_COLOR, const.HINT_BUTTON_RECT, border_radius = 5)
     
-def draw_target_display(SCREEN, start_word, target_word):
-    start_text = TARGET_FONT.render(f"Start: {start_word}", True, const.BLACK)
-    target_text = TARGET_FONT.render(f"Target: {target_word}", True, const.BLACK)
-    
-    start_rect = start_text.get_rect(center = (const.WIDTH // 2, 30))
-    target_rect = target_text.get_rect(center = (const.WIDTH // 2, 70))
-    
-    SCREEN.blit(start_text, start_rect)
-    SCREEN.blit(target_text, target_rect)
+    text_str = f"Hint ({hints_left})"
+    text_surface = HINT_FONT.render(text_str, True, const.WHITE)
+    text_rect = text_surface.get_rect(center = const.HINT_BUTTON_RECT.center)
+    SCREEN.blit(text_surface, text_rect)
