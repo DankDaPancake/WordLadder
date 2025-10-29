@@ -17,6 +17,7 @@ TITLE_IMAGE = None
 TITLE_IMAGE_RIGHT = None
 BAT_SWARM_IMAGE = None
 PUMPKIN_IMAGE = None
+CORG_HINT_IMAGE = None
 DEFINITION_FONT = None
 DEFINITION_TITLE_FONT = None
 TIMER_FONT = None
@@ -26,10 +27,11 @@ TITLE_IMAGE_PATH = "assets/Cute-Corgi-Pumpkin.png"
 TITLE_IMAGE_RIGHT_PATH = "assets/corg-removebg.png"
 BAT_SWARM_PATH = "assets/bat swarm.png"
 PUMPKIN_PATH = "assets/easy pumpkin.png"
+CORG_HINT_PATH = "assets/corg_hint.png"
 
 def initialize_fonts():
     global LETTER_FONT, MESSAGE_FONT, KEY_FONT, TARGET_FONT, SPECIAL_KEY_FONT, HINT_FONT, TITLE_IMAGE, TITLE_IMAGE_RIGHT
-    global DEFINITION_FONT, DEFINITION_TITLE_FONT, TIMER_FONT, BAT_SWARM_IMAGE, PUMPKIN_IMAGE
+    global DEFINITION_FONT, DEFINITION_TITLE_FONT, TIMER_FONT, BAT_SWARM_IMAGE, PUMPKIN_IMAGE, CORG_HINT_IMAGE
     
     LETTER_FONT = pygame.font.SysFont(None, const.LETTER_FONT_SIZE)
     KEY_FONT = pygame.font.SysFont(None, const.KEY_FONT_SIZE)
@@ -75,6 +77,14 @@ def initialize_fonts():
     except pygame.error:
         print(f"Could not load image: {PUMPKIN_PATH}")
         PUMPKIN_IMAGE = None
+    
+    try:
+        CORG_HINT_IMAGE = pygame.image.load(CORG_HINT_PATH)
+        # Scale corgi hint image to appropriate size for hint decoration
+        CORG_HINT_IMAGE = pygame.transform.scale(CORG_HINT_IMAGE, (200, 200))
+    except pygame.error:
+        print(f"Could not load image: {CORG_HINT_PATH}")
+        CORG_HINT_IMAGE = None
 
 def draw_bat_swarm_overlay(SCREEN):
     """Draw bat swarm overlay with 50% opacity after SCREEN.fill() calls."""
@@ -507,6 +517,16 @@ def draw_dictionary_hint(SCREEN, hint_word, definition_data, side="left"):
         # Stop if we're running out of space
         if text_y > panel_y + panel_height - 50:
             break
+    
+    # Draw corgi hint image below the panel, positioned slightly to the right
+    if CORG_HINT_IMAGE:
+        # Position corgi below panel with some spacing, slightly to the right
+        corgi_x = panel_x + panel_width // 3 + 50  # Position it about 1/3 from the left edge of panel
+        corgi_y = panel_y + panel_height - 150  # 10 pixels below the panel
+        
+        # Make sure the corgi doesn't go off screen
+        if corgi_y + CORG_HINT_IMAGE.get_height() <= const.HEIGHT - 20:
+            SCREEN.blit(CORG_HINT_IMAGE, (corgi_x, corgi_y))
 
 def draw_hint_loading(SCREEN, side="left"):
     """
