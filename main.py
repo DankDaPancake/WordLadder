@@ -141,6 +141,11 @@ def run_game_loop(SCREEN, clock, word_length):
     best_time = game_logic.get_best_time(word_length)
     is_new_record = False
     
+    # Animation system
+    animation_state = None  # "jumping" or "shaking" or None
+    animation_start_time = 0
+    animation_row = -1  # Which row is animating
+    
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -177,21 +182,20 @@ def run_game_loop(SCREEN, clock, word_length):
                     else:
                         hint_loading = False
                         
-                elif not any([game_config["HINT_BUTTON_RECT"].collidepoint(event.pos),
+                elif not any([game_config["HINT_BUTTON_RECT"].collidepoint(event.pos), 
                               game_config["BACK_BUTTON_RECT"].collidepoint(event.pos)]):
                     for char, rect in key_rects.items():
-                        # Check if clicking position collides with key's rect
                         if rect.collidepoint(event.pos):
-                            if char == "ENTER":
-                                key_event = pygame.event.Event(pygame.KEYDOWN, key = pygame.K_RETURN)
+                            # Post a "fake" keyboard event
+                            key_to_post = None
+                            if char == "ENTER": key_to_post = pygame.K_RETURN
+                            elif char == "DEL": key_to_post = pygame.K_BACKSPACE
+                            elif len(char) == 1: key_to_post = char
                             
-                            elif char == "DEL":
-                                key_event = pygame.event.Event(pygame.KEYDOWN, key = pygame.K_BACKSPACE)
-                            
-                            else: # Letters
-                                key_event = pygame.event.Event(pygame.KEYDOWN, unicode = char)
-                            
-                            pygame.event.post(key_event)
+                            if key_to_post:
+                                pygame.event.post(pygame.event.Event(pygame.KEYDOWN, 
+                                    key=(key_to_post if isinstance(key_to_post, int) else None),
+                                    unicode=(key_to_post if isinstance(key_to_post, str) else '')))
                                         
             if event.type == pygame.KEYDOWN:
                 # Player pressed BACKSPACE:
@@ -211,6 +215,11 @@ def run_game_loop(SCREEN, clock, word_length):
                         previous_word = "".join(grid_data[current_row - 1])
                         
                         if game_logic.is_valid_step(previous_word, new_guess, word_list):
+                            # Valid word - start jumping animation
+                            animation_state = "jumping"
+                            animation_start_time = pygame.time.get_ticks()
+                            animation_row = current_row
+                            
                             results = game_logic.get_color_hints(new_guess, target_word)
                             grid_results[current_row] = results
                             
@@ -236,14 +245,28 @@ def run_game_loop(SCREEN, clock, word_length):
                             else:
                                 current_row += 1
                                 current_col = 0
+                        else:
+                            # Invalid word - start shaking animation
+                            animation_state = "shaking"
+                            animation_start_time = pygame.time.get_ticks()
+                            animation_row = current_row
                             
                 # Player pressed a letter
-                elif event.unicode.isalpha() and not game_over:
+                elif hasattr(event, 'unicode') and event.unicode.isalpha() and not game_over:
                     char = event.unicode.upper()
                     if char in key_status:
                         if current_col < word_length:
                             grid_data[current_row][current_col] = char
                             current_col += 1
+        
+        # Update animations
+        current_time = pygame.time.get_ticks()
+        if animation_state:
+            animation_elapsed = current_time - animation_start_time
+            if ((animation_state == "jumping" and animation_elapsed >= const.JUMP_ANIMATION_DURATION) or
+                (animation_state == "shaking" and animation_elapsed >= const.SHAKE_ANIMATION_DURATION)):
+                animation_state = None
+                animation_row = -1
         
         SCREEN.fill(const.HALLOWEEN_BACKGROUND)
         drawing.draw_bat_swarm_overlay(SCREEN)
@@ -252,7 +275,14 @@ def run_game_loop(SCREEN, clock, word_length):
         drawing.draw_hint_button(SCREEN, hints_left, game_config)
         drawing.draw_back_button(SCREEN, game_config)        
 
-        drawing.draw_grid(SCREEN, grid_data, grid_results, game_config)
+        # Pass animation info to draw_grid
+        animation_info = {
+            "state": animation_state,
+            "start_time": animation_start_time,
+            "row": animation_row,
+            "current_time": current_time
+        }
+        drawing.draw_grid(SCREEN, grid_data, grid_results, game_config, animation_info)
         drawing.draw_keyboard(SCREEN, key_rects, key_status, game_config)
         
         # Draw timer panel on the right

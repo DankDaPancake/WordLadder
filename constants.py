@@ -59,7 +59,7 @@ MAX_DEFINITION_LENGTH = 80  # Characters per line for word wrapping
 
 # Path Length Configuration (for game difficulty balance)
 MAX_PATH_GENERATION_RETRIES = 3
-MIN_PATH_LENGTH = 3  # Minimum path length for any word size (at least 3 steps)
+MIN_PATH_LENGTH = 2  # Minimum path length (2 steps for long words, more for shorter words)
 
 # Timer Display Configuration
 TIMER_FONT_SIZE = 28
@@ -71,3 +71,10 @@ TIMER_PANEL_MARGIN = 20
 TOP_MARGIN_PX = 150
 BOTTOM_MARGIN_PX = 300
 MARGIN_RATIO = 0.1
+
+# Animation Constants
+JUMP_ANIMATION_DURATION = 600  # milliseconds
+SHAKE_ANIMATION_DURATION = 400  # milliseconds
+JUMP_HEIGHT = 15  # pixels
+SHAKE_INTENSITY = 8  # pixels
+ANIMATION_DELAY_BETWEEN_TILES = 80  # milliseconds delay between each tile's animation

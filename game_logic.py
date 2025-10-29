@@ -57,22 +57,30 @@ def is_valid_step(previous_word, new_guess, word_list):
     
     return True
 
+def get_min_path_length(word_length):
+    """Return the minimum required path length for the given word length."""
+    if word_length >= 10:  # Long words need shorter minimum paths
+        return 2
+    else:  # Shorter words need longer minimum paths
+        return 3
+
 def reset_game(word_list, word_length, game_config):
     # Initialize data for new game
     print("Generating new ladder...")
     start_word = random.choice(word_list)
     
     # Calculate appropriate path length based on word length for playability
+    # New rule: shorter words can have longer paths, longer words get shorter paths
     if word_length <= 4:
-        path_length = random.randint(3, 4)  # Minimum 3 steps for 4-letter words
+        path_length = random.randint(3, 6)  # 4-letter words: moderate to long paths
     elif word_length <= 6:
-        path_length = random.randint(3, 5)  # Short paths for 5-6 letter words
+        path_length = random.randint(4, 7)  # 5-6 letter words: longer paths allowed
     elif word_length <= 8:
-        path_length = random.randint(3, 6)  # Medium paths for 7-8 letter words
-    elif word_length <= 10:
-        path_length = random.randint(4, 6)  # Controlled paths for 9-10 letter words
-    else:  # 11+ letters
-        path_length = random.randint(4, 7)  # Still reasonable for very long words
+        path_length = random.randint(4, 8)  # 7-8 letter words: longest paths
+    elif word_length == 9:
+        path_length = random.randint(3, 6)  # 9-letter words: medium paths
+    elif word_length >= 10:  # 10+ letters
+        path_length = random.randint(2, 4)  # Long words: short paths only (2-4 steps)
     
     current_word = start_word
     path = [start_word]
@@ -102,7 +110,8 @@ def reset_game(word_list, word_length, game_config):
         
         retry_count += 1
         # Reduce path length for retries to increase success chance
-        path_length = max(const.MIN_PATH_LENGTH, path_length - 1)
+        min_path = get_min_path_length(word_length)
+        path_length = max(min_path, path_length - 1)
     
     if retry_count >= max_retries:
         print("Multiple dead ends encountered, using shorter path")
@@ -119,9 +128,10 @@ def reset_game(word_list, word_length, game_config):
     
     target_word = path[-1]  # Use the last word in the path as target
     
-    # Ensure we meet minimum path length requirement
-    if len(path) < const.MIN_PATH_LENGTH:
-        print(f"Path too short ({len(path)} steps), regenerating ladder...")
+    # Ensure we meet minimum path length requirement for this word length
+    min_required_length = get_min_path_length(word_length)
+    if len(path) < min_required_length:
+        print(f"Path too short ({len(path)} steps, need {min_required_length}), regenerating ladder...")
         return reset_game(word_list, word_length, game_config)
     
     print(f"Successfully generated path: {path}")

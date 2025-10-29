@@ -1,4 +1,5 @@
 import pygame
+import math
 
 import constants as const 
 
@@ -157,12 +158,41 @@ def draw_target_display(SCREEN, start_word, target_word, game_config):
                           const.ORANGE, const.WHITE, 
                           (const.WIDTH // 2, 100), outline_width=2)
 
-def draw_grid(SCREEN, grid_data, grid_results, game_config):
+def draw_grid(SCREEN, grid_data, grid_results, game_config, animation_info=None):
     # Get dynamic values from config
     tile_size = game_config["TILE_SIZE"]
     margin = game_config["MARGIN"]
     start_x = game_config["START_X"]
     start_y = game_config["START_Y"]
+    
+    # Animation helper function
+    def calculate_animation_offset(row, col):
+        if not animation_info or animation_info["state"] is None or animation_info["row"] != row:
+            return 0, 0
+        
+        elapsed_time = animation_info["current_time"] - animation_info["start_time"]
+        
+        if animation_info["state"] == "jumping":
+            # Each tile animates with a delay based on column position
+            tile_delay = col * const.ANIMATION_DELAY_BETWEEN_TILES
+            tile_elapsed = max(0, elapsed_time - tile_delay)
+            
+            if tile_elapsed < const.JUMP_ANIMATION_DURATION:
+                # Use sine wave for smooth jumping motion
+                progress = tile_elapsed / const.JUMP_ANIMATION_DURATION
+                jump_offset = -const.JUMP_HEIGHT * abs(math.sin(progress * math.pi))
+                return 0, int(jump_offset)
+        
+        elif animation_info["state"] == "shaking":
+            # Shake horizontally for all tiles in the row
+            if elapsed_time < const.SHAKE_ANIMATION_DURATION:
+                # Use sine wave for shaking motion
+                shake_frequency = 20  # Hz
+                progress = elapsed_time / 1000.0  # Convert to seconds
+                shake_offset = const.SHAKE_INTENSITY * math.sin(progress * shake_frequency * 2 * math.pi)
+                return int(shake_offset), 0
+        
+        return 0, 0
     
     for row in range(game_config["GRID_ROWS"]):
         for col in range(game_config["GRID_COLS"]):
@@ -172,6 +202,11 @@ def draw_grid(SCREEN, grid_data, grid_results, game_config):
             # Position of current tile
             x = start_x + col * (tile_size + margin)
             y = start_y + row * (tile_size + margin)
+            
+            # Apply animation offset
+            offset_x, offset_y = calculate_animation_offset(row, col)
+            x += offset_x
+            y += offset_y
             
             # Tile's information to be drew on canvas
             tile_rect = pygame.Rect(x, y, tile_size, tile_size)
