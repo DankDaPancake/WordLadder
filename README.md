@@ -1,4 +1,4 @@
-# 🎃 Halloween Word Ladder 🦇
+# 🎃 Cordle - Halloween Word Ladder 🦇
 
 ![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)
 ![Pygame](https://img.shields.io/badge/pygame-2.0+-green.svg)
