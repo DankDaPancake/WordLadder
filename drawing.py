@@ -195,7 +195,7 @@ def draw_main_menu(SCREEN, menu_config):
     SCREEN.blit(title_text, title_rect)
     
     # Play Button
-    pygame.draw.rect(SCREEN, const.GREEN, menu_config["PLAY_BUTTON_RECT"], border_radius = 10)
+    pygame.draw.rect(SCREEN, const.ORANGE, menu_config["PLAY_BUTTON_RECT"], border_radius = 10)
     play_text = MESSAGE_FONT.render("PLAY", True, const.WHITE)
     play_rect = play_text.get_rect(center = menu_config["PLAY_BUTTON_RECT"].center)
     SCREEN.blit(play_text, play_rect)
@@ -218,7 +218,7 @@ def draw_length_selector(SCREEN, length_config):
     
     for i, rect in enumerate(length_config["BUTTON_RECTS"]):
         word_length = i + 4
-        pygame.draw.rect(SCREEN, const.KEY_COLOR, rect, border_radius = 5)
+        pygame.draw.rect(SCREEN, const.LIGHT_PURPLE, rect, border_radius = 5)
         text = MESSAGE_FONT.render(str(word_length), True, const.BLACK)
         text_rect = text.get_rect(center = rect.center)
         SCREEN.blit(text, text_rect)
