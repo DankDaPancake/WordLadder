@@ -113,7 +113,7 @@ def run_game_loop(SCREEN, clock, word_length):
     game_config["KEY_MARGIN"] = const.KEY_MARGIN
     game_config["KEYBOARD_START_Y"] = const.TOP_MARGIN_PX + (tile_size + margin) * game_config["GRID_ROWS"]
     
-    game_config["HINT_BUTTON_RECT"] = pygame.Rect(const.WIDTH - 220, 30, 200, 80)
+    game_config["HINT_BUTTON_RECT"] = pygame.Rect(const.WIDTH - 220, 150, 200, 80)
     game_config["BACK_BUTTON_RECT"] = pygame.Rect(20, const.HEIGHT - 100, 200, 80)
     
     # Game core initialization
@@ -127,7 +127,19 @@ def run_game_loop(SCREEN, clock, word_length):
     (start_word, target_word, grid_data, grid_results, 
     current_row, current_col,
     game_over, did_win, key_status,
-    hints_left) = game_logic.reset_game(word_list, word_length, game_config)
+    hints_left, solution_path) = game_logic.reset_game(word_list, word_length, game_config)
+    
+    # Dictionary hint state
+    current_hint_word = None
+    current_hint_definition = None
+    hint_loading = False
+    
+    # Timer system
+    import time
+    start_time = time.time()
+    completion_time = None  # Will be set when game ends
+    best_time = game_logic.get_best_time(word_length)
+    is_new_record = False
     
     while True:
         for event in pygame.event.get():
@@ -141,13 +153,29 @@ def run_game_loop(SCREEN, clock, word_length):
             if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
                 if game_config["HINT_BUTTON_RECT"].collidepoint(event.pos) and hints_left > 0:
                     previous_word = "".join(grid_data[current_row - 1])
-                    hint_word = game_logic.find_next_step(previous_word, target_word, word_list)
                     
-                    if hint_word:
+                    # Start loading the dictionary hint
+                    hint_loading = True
+                    
+                    # Get dictionary hint from pre-generated path (this might take a moment due to API call)
+                    hint_word, definition_data = game_logic.get_dictionary_hint_from_path(previous_word, solution_path)
+                    
+                    # If path-based hint fails, use fallback method
+                    if not hint_word:
+                        hint_word, definition_data = game_logic.get_dictionary_hint(previous_word, target_word, word_list)
+                    
+                    if hint_word and definition_data:
                         hints_left -= 1
-                        grid_data[current_row] = [""] * game_config["GRID_COLS"]
-                        grid_data[current_row] = list(hint_word)
-                        current_col = game_config["GRID_COLS"]
+                        current_hint_word = hint_word
+                        current_hint_definition = definition_data
+                        hint_loading = False
+                    elif hint_word:  # Fallback if API fails but we have a word
+                        hints_left -= 1
+                        current_hint_word = hint_word
+                        current_hint_definition = {"word": hint_word, "meanings": [{"partOfSpeech": "unknown", "definition": "Dictionary unavailable - try this word!"}]}
+                        hint_loading = False
+                    else:
+                        hint_loading = False
                         
                 elif not any([game_config["HINT_BUTTON_RECT"].collidepoint(event.pos),
                               game_config["BACK_BUTTON_RECT"].collidepoint(event.pos)]):
@@ -199,6 +227,9 @@ def run_game_loop(SCREEN, clock, word_length):
                             if new_guess == target_word:
                                 game_over = True
                                 did_win = True
+                                # Record completion time and check for new record
+                                completion_time = time.time() - start_time
+                                is_new_record = game_logic.update_best_time(word_length, completion_time)
                             elif current_row == game_config["GRID_ROWS"] - 1:
                                 game_over = True
                                 did_win = False
@@ -214,7 +245,8 @@ def run_game_loop(SCREEN, clock, word_length):
                             grid_data[current_row][current_col] = char
                             current_col += 1
         
-        SCREEN.fill(const.BLACK)
+        SCREEN.fill(const.HALLOWEEN_BACKGROUND)
+        drawing.draw_bat_swarm_overlay(SCREEN)
         
         drawing.draw_target_display(SCREEN, start_word, target_word, game_config)
         drawing.draw_hint_button(SCREEN, hints_left, game_config)
@@ -223,8 +255,24 @@ def run_game_loop(SCREEN, clock, word_length):
         drawing.draw_grid(SCREEN, grid_data, grid_results, game_config)
         drawing.draw_keyboard(SCREEN, key_rects, key_status, game_config)
         
+        # Draw timer panel on the right
+        if game_over and completion_time is not None:
+            # Use stored completion time when game is over
+            display_time = completion_time
+        else:
+            # Use current elapsed time during gameplay
+            display_time = time.time() - start_time
+        
+        drawing.draw_timer_panel(SCREEN, display_time, best_time, word_length, is_new_record and game_over)
+        
+        # Draw dictionary hint if available
+        if hint_loading:
+            drawing.draw_hint_loading(SCREEN, side="left")
+        elif current_hint_word and current_hint_definition:
+            drawing.draw_dictionary_hint(SCREEN, current_hint_word, current_hint_definition, side="left")
+        
         if game_over:
-            drawing.draw_game_over_screen(SCREEN, did_win, target_word, game_config)
+            drawing.draw_game_over_screen(SCREEN, did_win, target_word, game_config, completion_time if did_win else None, is_new_record)
         
         pygame.display.flip()
         clock.tick(60)

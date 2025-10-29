@@ -1,112 +1,168 @@
-# Pygame Wordle Clone
+# 🎃 Halloween Word Ladder 🦇
 
 ![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)
+![Pygame](https://img.shields.io/badge/pygame-2.0+-green.svg)
 
-A recreation of the famous game Wordle that took the internet by storm in late 2021. This project is a complete, playable desktop application built from scratch using Python and the Pygame library.
-
-This version functions as a "Wordle Unlimited," allowing you to play as many rounds as you'd like.
-
----
-
-## Features
-
-This clone includes all the core features of the original, plus several enhancements to improve the user experience:
-
-* **Core Wordle Logic:** Guesses are evaluated and tiles change color based on the original rules:
-    * **Green:** Correct letter in the correct position.
-    * **Yellow:** Correct letter in the wrong position.
-    * **Grey:** Letter not in the secret word.
-* **Unlimited Play:** When a game ends, you can press **ENTER** to immediately reset the game and play again with a new secret word.
-* **Virtual Keyboard:** A full on-screen keyboard allows the game to be played with only a mouse. It includes clickable **"ENTER"** and **"DEL"** keys.
-* **Invalid Word Animation:** If you submit a word that isn't in the game's dictionary, the current row will shake to provide instant feedback.
-* **Reveal Animation:** When a valid word is submitted, each letter "jumps" as its color is revealed one by one.
+A spooky Halloween-themed Word Ladder puzzle game built with Python and Pygame! Transform one word into another by changing exactly one letter at a time, with each step creating a valid English word. Features atmospheric Halloween visuals, intelligent hint system, and personal best time tracking.
 
 ---
 
-## Getting Started
+## 🎮 Game Features
 
-Follow these instructions to get a copy of the project up and running on your local machine.
+### Core Word Ladder Mechanics
+* **Word Transformation:** Change one letter at a time to transform the start word into the target word
+* **Valid Word Validation:** Every intermediate step must be a valid English word
+* **Multiple Word Lengths:** Choose from 4-15 letter words for varying difficulty levels
+* **Path Generation:** Intelligent algorithm ensures solvable puzzles with optimal path lengths
 
-### 1. Prerequisites: Install Python
+### Halloween Theme 🎃
+* **Spooky Atmosphere:** Dark purple backgrounds with bat swarm overlays
+* **Halloween Colors:** Pumpkin orange, spooky greens, and blood red accents
+* **Themed Assets:** Corgi pumpkin mascots, decorative pumpkins, and flying bats
+* **Custom Font:** SpookyHalloweenPersonalUse font for authentic Halloween feel
 
-This project requires **Python 3.10 or newer**.
+### Smart Hint System 🔮
+* **Dictionary Integration:** Real-time word definitions from online dictionary API
+* **Path-Based Hints:** Intelligent hints derived from the optimal solution path
+* **Limited Usage:** Strategic hint system encourages thoughtful gameplay
+* **Side Panel Display:** Hints appear in atmospheric side panels
 
-* Go to the official Python website: [python.org/downloads](https://www.python.org/downloads/)
-* Download the installer for your operating system (Windows, macOS, or Linux).
-* **Important (Windows Only):** During the installation, make sure to check the box that says **"Add Python to PATH"**.
-
-### 2. Environment Setup (Recommended)
-
-It is highly recommended to use a **Python Virtual Environment (`venv`)** to manage your project's dependencies.
-
-A `venv` is a self-contained directory that holds a specific Python interpreter and all the libraries your project needs. This prevents conflicts between projects and keeps your global Python installation clean.
+### Timer & Progress Tracking ⏱️
+* **Live Timer:** Real-time gameplay timer with millisecond precision
+* **Personal Bests:** Automatic tracking and saving of best completion times
+* **JSON Storage:** Persistent best time records stored locally
+* **Performance Display:** View your best times for each word length
 
 ---
 
-## Installation & Running
+## 🎯 How to Play
 
-1.  **Clone the Repository**
+1. **Start the Game:** Choose your desired word length (4-15 letters)
+2. **Transform Words:** Change exactly one letter per step to create valid words
+3. **Reach the Target:** Transform the start word into the target word
+4. **Use Hints Wisely:** Get dictionary definitions or path hints when stuck
+5. **Beat Your Time:** Try to complete puzzles faster than your personal best!
+
+### Example Word Ladder:
+```
+CAT → COT → COG → DOG
+(CAT to DOG in 3 steps)
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+* **Python 3.10 or newer** - [Download Python](https://www.python.org/downloads/)
+* **Internet Connection** - Required for dictionary API hints
+* **Windows/macOS/Linux** - Cross-platform compatibility
+
+### Installation Steps
+
+---
+
+1. **Clone the Repository**
     ```bash
-    git clone [https://github.com/DankDaPancake/Wordle.git](https://github.com/DankDaPancake/Wordle.git)
-    cd pygame-wordle
+    git clone https://github.com/DankDaPancake/WordLadder.git
+    cd WordLadder
     ```
-    or 
+
+2. **Create Virtual Environment (Recommended)**
     ```bash
-    git clone https://github.com/DankDaPancake/Wordle.git
-    cd pygame-wordle
+    # macOS/Linux
+    python3 -m venv venv
+    source venv/bin/activate
+
+    # Windows
+    python -m venv venv
+    venv\Scripts\activate
     ```
 
-2.  **Create and Activate Your Virtual Environment**
-
-    * On **macOS / Linux**:
-        ```bash
-        python3 -m venv venv
-        source venv/bin/activate
-        ```
-
-    * On **Windows**:
-        ```bash
-        py -m venv venv
-        .\venv\Scripts\activate
-        ```
-    *(Your terminal prompt should now have a `(venv)` prefix)*
-
-3.  **Install Dependencies**
-
-    This project requires the `pygame` library. A `requirements.txt` file is included to install it easily.
+3. **Install Dependencies**
     ```bash
     pip install -r requirements.txt
     ```
-    *(**Note:** If you haven't created this file, activate your venv, run `pip install pygame`, and then run `pip freeze > requirements.txt` to create it.)*
 
-4. **Download the source dictionary**
-    The game runs based on my modified dictionary, please download and paste into Wordle/
-    Link: https://drive.google.com/drive/folders/1BdnN2-PLw5gN-PWRA-oh2_Cd6HFwRsX6?usp=sharing
-
-5.  **Run the Game!**
+4. **Run the Game**
     ```bash
     python main.py
     ```
-    or just click the "Run code" button.
+
+## 🎮 Controls
+
+* **Mouse:** Navigate menus and click buttons
+* **Keyboard:** Type letters to fill the word grid
+* **Enter:** Submit your word attempt
+* **Backspace:** Delete the last letter
+* **Hint Button:** Get dictionary definitions or path hints
+* **Back Button:** Return to main menu
 
 ---
 
-## Project Structure
-
-The project is organized into several modules for a clean separation of concerns:
+## 📁 Project Structure
 
 ```
-pygame-wordle/ 
-├── .venv/          # The virtual environment directory (ignored by git) 
-├── main.py         # Main game loop, state machine, and event handling 
-├── constants.py    # All game constants (colors, sizes, layout)
-├── drawing.py      # All functions that draw to the screen 
-├── game_logic.py   # Game state functions (reset, check_guess, etc.) 
-├── wordlist.txt    # The dictionary of valid words 
-├── requirements.txt # Project dependencies 
-└── README.md
+WordLadder/
+├── assets/                    # Game assets and media files
+│   ├── Cute-Corgi-Pumpkin.png       # Left mascot image
+│   ├── corg-removebg.png            # Right mascot image  
+│   ├── bat swarm.png               # Background overlay
+│   ├── easy pumpkin.png            # Decorative pumpkin
+│   └── SpookyHalloweenPersonalUse.ttf # Halloween font
+├── word_data/                 # Word lists for different lengths
+│   ├── wordlist_04.txt             # 4-letter words
+│   ├── wordlist_05.txt             # 5-letter words
+│   └── ... (wordlist_06.txt to wordlist_15.txt)
+├── main.py                   # Main game loop and state management
+├── constants.py              # Game constants (colors, sizes, layouts)
+├── drawing.py                # All rendering and UI functions  
+├── game_logic.py             # Game logic, path generation, hints
+├── best_times.json           # Personal best time storage (auto-generated)
+├── requirements.txt          # Python dependencies
+└── README.md                # This file
 ```
 
-### Note
-The project's progress can be tracked from my github's Multiple-Python-Projects, where I finished the project before cloning to their own repositories:
-https://github.com/DankDaPancake/Multiple-Python-Projects
+## 🎯 Game Mechanics Deep Dive
+
+### Word Ladder Rules
+1. Start with the given starting word
+2. Change exactly **one letter** to create a new valid word
+3. Repeat until you reach the target word
+4. Every intermediate word must be valid English
+
+### Difficulty Scaling
+* **4-6 letters:** Beginner friendly, shorter paths
+* **7-9 letters:** Intermediate challenge, moderate paths  
+* **10-12 letters:** Advanced difficulty, longer paths
+* **13-15 letters:** Expert level, complex transformations
+
+### Hint System Details
+* **Dictionary Hints:** Real definitions from api.dictionaryapi.dev
+* **Path Hints:** Strategic hints from the optimal solution
+* **Limited Use:** Encourages strategic thinking
+* **Smart Timing:** Hints adapt based on progress
+
+## 🛠️ Technical Features
+
+* **Cross-Platform:** Works on Windows, macOS, and Linux
+* **Modular Design:** Clean separation of concerns across files
+* **API Integration:** Real-time dictionary lookups
+* **Data Persistence:** JSON-based best time storage
+* **Scalable Assets:** Automatic image scaling and optimization
+* **Error Handling:** Robust fallback systems for network issues
+
+## 🎨 Customization
+
+The game's Halloween theme can be customized by modifying:
+* **Colors:** Edit values in `constants.py`
+* **Images:** Replace files in `assets/` directory
+* **Word Lists:** Add custom word files to `word_data/`
+* **Fonts:** Change font paths in the drawing module
+
+## 📝 License
+
+Created by DankDaPancake - Feel free to fork and modify!
+
+## 🎃 Happy Halloween! 🦇
+
+Enjoy this spooky twist on the classic Word Ladder puzzle game!

@@ -1,5 +1,9 @@
 import random
 import string
+import requests
+import json
+import os
+import time
 from collections import Counter
 
 import constants as const
@@ -58,28 +62,70 @@ def reset_game(word_list, word_length, game_config):
     print("Generating new ladder...")
     start_word = random.choice(word_list)
     
-    path_length = random.randint(word_length - 1, word_length + 2)    
+    # Calculate appropriate path length based on word length for playability
+    if word_length <= 4:
+        path_length = random.randint(3, 4)  # Minimum 3 steps for 4-letter words
+    elif word_length <= 6:
+        path_length = random.randint(3, 5)  # Short paths for 5-6 letter words
+    elif word_length <= 8:
+        path_length = random.randint(3, 6)  # Medium paths for 7-8 letter words
+    elif word_length <= 10:
+        path_length = random.randint(4, 6)  # Controlled paths for 9-10 letter words
+    else:  # 11+ letters
+        path_length = random.randint(4, 7)  # Still reasonable for very long words
+    
     current_word = start_word
     path = [start_word]
     
-    for _ in range(path_length):
-        valid_next_steps = find_all_step(current_word, word_list)
-        valid_next_steps = [step for step in valid_next_steps if step not in path]
-        
-        if not valid_next_steps:
-            if len(path) <= 2:
-                print("Hit dead end, regenerating...")
-                return reset_game(word_list, word_length, game_config)
-            else:
-                break
-                    
-        current_word = random.choice(valid_next_steps)
-        path.append(current_word)
+    max_retries = const.MAX_PATH_GENERATION_RETRIES
+    retry_count = 0
     
-    target_word = current_word
+    while retry_count < max_retries:
+        current_word = start_word
+        path = [start_word]
+        success = True
+        
+        for step in range(path_length):
+            valid_next_steps = find_all_step(current_word, word_list)
+            valid_next_steps = [step for step in valid_next_steps if step not in path]
+            
+            if not valid_next_steps:
+                print(f"Hit dead end at step {step + 1}/{path_length}, retry {retry_count + 1}")
+                success = False
+                break
+                        
+            current_word = random.choice(valid_next_steps)
+            path.append(current_word)
+        
+        if success:
+            break
+        
+        retry_count += 1
+        # Reduce path length for retries to increase success chance
+        path_length = max(const.MIN_PATH_LENGTH, path_length - 1)
+    
+    if retry_count >= max_retries:
+        print("Multiple dead ends encountered, using shorter path")
+        # Last resort: very short path
+        current_word = start_word
+        path = [start_word]
+        valid_next_steps = find_all_step(current_word, word_list)
+        if valid_next_steps:
+            current_word = random.choice(valid_next_steps)
+            path.append(current_word)
+        else:
+            # Extremely rare case - regenerate with different start word
+            return reset_game(word_list, word_length, game_config)
+    
+    target_word = path[-1]  # Use the last word in the path as target
+    
+    # Ensure we meet minimum path length requirement
+    if len(path) < const.MIN_PATH_LENGTH:
+        print(f"Path too short ({len(path)} steps), regenerating ladder...")
+        return reset_game(word_list, word_length, game_config)
     
     print(f"Successfully generated path: {path}")
-    print(f"Start: {start_word} | Target: {target_word}")
+    print(f"Start: {start_word} | Target: {target_word} | Path length: {len(path)} steps")
     
     grid_data = [["" for _ in range(game_config["GRID_COLS"])] for _ in range(game_config["GRID_ROWS"])]
     grid_results = [["empty" for _ in range(game_config["GRID_COLS"])] for _ in range(game_config["GRID_ROWS"])]
@@ -109,7 +155,7 @@ def reset_game(word_list, word_length, game_config):
     return (start_word, target_word, grid_data, grid_results, 
             current_row, current_col, 
             game_over, did_win, key_status, 
-            hints_left)
+            hints_left, path)
     
 def find_next_step(previous_word, target_word, word_list):
     possible_steps = find_all_step(previous_word, word_list)
@@ -156,4 +202,144 @@ def find_all_step(previous_word, word_list):
                 possible_steps.add(new_guess)
     
     return list(possible_steps)
+
+def fetch_word_definition(word):
+    """
+    Fetch word definition from dictionary API.
+    Returns a dictionary with parsed definition data or None if failed.
+    """
+    try:
+        url = f"{const.DICTIONARY_API_URL}{word.lower()}"
+        response = requests.get(url, timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data and len(data) > 0:
+                return parse_definition_data(data[0])
+        
+        return None
+    except (requests.RequestException, json.JSONDecodeError, KeyError):
+        return None
+
+def parse_definition_data(word_data):
+    """
+    Parse the JSON response from dictionary API into a simplified format.
+    Returns a dictionary with word, phonetic, and meanings.
+    """
+    try:
+        parsed = {
+            "word": word_data.get("word", ""),
+            "phonetic": word_data.get("phonetic", ""),
+            "meanings": []
+        }
+        
+        # Extract up to 3 meanings to avoid overwhelming the screen
+        meanings = word_data.get("meanings", [])[:3]
+        
+        for meaning in meanings:
+            part_of_speech = meaning.get("partOfSpeech", "")
+            definitions = meaning.get("definitions", [])[:2]  # Max 2 definitions per part of speech
+            
+            for definition in definitions:
+                def_text = definition.get("definition", "")
+                example = definition.get("example", "")
+                
+                # Truncate long definitions
+                if len(def_text) > const.MAX_DEFINITION_LENGTH:
+                    def_text = def_text[:const.MAX_DEFINITION_LENGTH] + "..."
+                
+                parsed["meanings"].append({
+                    "partOfSpeech": part_of_speech,
+                    "definition": def_text,
+                    "example": example[:60] + "..." if len(example) > 60 else example
+                })
+        
+        return parsed
+    except (KeyError, AttributeError):
+        return None
+
+def get_dictionary_hint_from_path(previous_word, solution_path):
+    """
+    Get the next step word from the pre-generated solution path and fetch its dictionary definition.
+    Returns tuple: (hint_word, definition_data)
+    """
+    try:
+        # Find the current position in the path
+        current_index = solution_path.index(previous_word)
+        
+        # Get the next word in the path if it exists
+        if current_index + 1 < len(solution_path):
+            hint_word = solution_path[current_index + 1]
+            definition = fetch_word_definition(hint_word)
+            return hint_word, definition
+        else:
+            # We're at the end of the path (shouldn't happen normally)
+            return None, None
+            
+    except ValueError:
+        # previous_word not found in path, fall back to old method
+        print(f"Warning: {previous_word} not found in solution path, using fallback hint")
+        return None, None
+
+def get_dictionary_hint(previous_word, target_word, word_list):
+    """
+    Get the next step word and fetch its dictionary definition.
+    Returns tuple: (hint_word, definition_data)
+    """
+    hint_word = find_next_step(previous_word, target_word, word_list)
+    
+    if hint_word:
+        definition = fetch_word_definition(hint_word)
+        return hint_word, definition
+    
+    return None, None
+
+# Timer and Personal Best System
+BEST_TIMES_FILE = "best_times.json"
+
+def load_best_times():
+    """Load personal best times from JSON file."""
+    try:
+        if os.path.exists(BEST_TIMES_FILE):
+            with open(BEST_TIMES_FILE, 'r') as f:
+                return json.load(f)
+        else:
+            return {}
+    except (json.JSONDecodeError, IOError):
+        return {}
+
+def save_best_times(best_times):
+    """Save personal best times to JSON file."""
+    try:
+        with open(BEST_TIMES_FILE, 'w') as f:
+            json.dump(best_times, f, indent=2)
+    except IOError:
+        print("Failed to save best times")
+
+def update_best_time(word_length, completion_time):
+    """Update best time for a specific word length if it's a new record."""
+    best_times = load_best_times()
+    key = str(word_length)
+    
+    # Round completion time to 2 decimal places
+    rounded_time = round(completion_time, 2)
+    
+    if key not in best_times or rounded_time < best_times[key]:
+        best_times[key] = rounded_time
+        save_best_times(best_times)
+        return True  # New record!
+    return False
+
+def get_best_time(word_length):
+    """Get the best time for a specific word length."""
+    best_times = load_best_times()
+    return best_times.get(str(word_length), None)
+
+def format_time(seconds):
+    """Format time in MM:SS format."""
+    if seconds is None:
+        return "--:--"
+    minutes = int(seconds // 60)
+    seconds = int(seconds % 60)
+    return f"{minutes:02d}:{seconds:02d}"
 
