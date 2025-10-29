@@ -278,7 +278,7 @@ def draw_game_over_screen(SCREEN, did_win, target_word, game_config, completion_
         message_color = const.BLOOD_RED
     
     # Display main message with outline
-    draw_text_with_outline(SCREEN, message, MESSAGE_FONT, 
+    draw_text_with_outline(SCREEN, message, LETTER_FONT, 
                           message_color, const.WHITE, 
                           (const.WIDTH // 2, const.HEIGHT // 2 - 60), outline_width=3)
 
@@ -299,7 +299,7 @@ def draw_game_over_screen(SCREEN, did_win, target_word, game_config, completion_
 
     # Display "Play Again" option with outline
     play_again_y = const.HEIGHT // 2 + 50 if (did_win and completion_time) else const.HEIGHT // 2 + 20
-    draw_text_with_outline(SCREEN, "Press ENTER or Click to Return to Menu", MESSAGE_FONT, 
+    draw_text_with_outline(SCREEN, "Press ENTER or Click to Return to Menu", LETTER_FONT, 
                           const.PURPLE, const.WHITE, 
                           (const.WIDTH // 2, play_again_y), outline_width=2)
 
