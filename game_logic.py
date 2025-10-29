@@ -1,6 +1,5 @@
 import random
 import string
-import os
 from collections import Counter
 
 import constants as const
@@ -54,21 +53,36 @@ def is_valid_step(previous_word, new_guess, word_list):
     
     return True
 
-def reset_game(word_list, word_length):
+def reset_game(word_list, word_length, game_config):
     # Initialize data for new game
+    print("Generating new ladder...")
     start_word = random.choice(word_list)
     
-    path_length = random.randint(4, 7)    
+    path_length = random.randint(word_length - 1, word_length + 2)    
     current_word = start_word
     path = [start_word]
-    target_word = random.choice(word_list)
-    while start_word == target_word:
-        target_word = random.choice(word_list)
+    
+    for _ in range(path_length):
+        valid_next_steps = find_all_step(current_word, word_list)
+        valid_next_steps = [step for step in valid_next_steps if step not in path]
         
+        if not valid_next_steps:
+            if len(path) <= 2:
+                print("Hit dead end, regenerating...")
+                return reset_game(word_list, word_length, game_config)
+            else:
+                break
+                    
+        current_word = random.choice(valid_next_steps)
+        path.append(current_word)
+    
+    target_word = current_word
+    
+    print(f"Successfully generated path: {path}")
     print(f"Start: {start_word} | Target: {target_word}")
     
-    grid_data = [["" for _ in range(word_length)] for _ in range(const.GRID_ROWS)]
-    grid_results = [["empty" for _ in range(word_length)] for _ in range(const.GRID_ROWS)]
+    grid_data = [["" for _ in range(game_config["GRID_COLS"])] for _ in range(game_config["GRID_ROWS"])]
+    grid_results = [["empty" for _ in range(game_config["GRID_COLS"])] for _ in range(game_config["GRID_ROWS"])]
 
     grid_data[0] = list(start_word)
     grid_results[0] = get_color_hints(start_word, target_word)
@@ -85,11 +99,12 @@ def reset_game(word_list, word_length):
     
     for i, letter in enumerate(start_word):
         new_status = grid_results[0][i]
-        current_priority = status_priority[key_status[letter]]
-        new_priority = status_priority[new_status]
-        
-        if new_priority > current_priority:
-            key_status[letter] = new_status
+        if letter in key_status:
+            current_priority = status_priority[key_status[letter]]
+            new_priority = status_priority[new_status]
+            
+            if new_priority > current_priority:
+                key_status[letter] = new_status
     
     return (start_word, target_word, grid_data, grid_results, 
             current_row, current_col, 
@@ -129,9 +144,8 @@ def find_all_step(previous_word, word_list):
     
     for i in range(len(previous_word)):
         original_char = previous_word[i]
-        
         for letter in alphabet:
-            if letter in original_char:
+            if letter == original_char:
                 continue
             
             new_guess = list(previous_word)
@@ -139,7 +153,7 @@ def find_all_step(previous_word, word_list):
             new_guess = "".join(new_guess)
             
             if new_guess in word_list:
-                possible_steps.append(new_guess)
+                possible_steps.add(new_guess)
     
     return list(possible_steps)
 

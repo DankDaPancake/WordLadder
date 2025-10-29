@@ -22,14 +22,21 @@ def main_app():
     current_word_length = 5
     running = True
 
+    # Menu layouts
+    menu_config = {
+        "PLAY_BUTTON_RECT": pygame.Rect(const.WIDTH // 2 - 200, 300, 400, 100),
+        "QUIT_BUTTON_RECT": pygame.Rect(const.WIDTH // 2 - 200, 420, 400, 100)
+    }
+    length_config = drawing.create_length_selector_rects()
+
     # Game loop
     while running:
         if game_state == STATE_MAIN_MENU:
-            new_state, running = run_main_menu(SCREEN, clock)
+            new_state, running = run_main_menu(SCREEN, clock, menu_config)
             game_state = new_state
         
         elif game_state == STATE_SELECT_LENGTH:
-            new_state, new_length = run_length_selector(SCREEN, clock)
+            new_state, new_length = run_length_selector(SCREEN, clock, length_config)
             game_state = new_state
             if new_length:
                 current_word_length = new_length
@@ -41,54 +48,86 @@ def main_app():
     pygame.quit()
     sys.exit()
 
-def run_main_menu(SCREEN, clock):
+def run_main_menu(SCREEN, clock, menu_config):
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return STATE_MAIN_MENU, False
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if const.PLAY_BUTTON_RECT.collidepoint(event.pos):
+                if menu_config["PLAY_BUTTON_RECT"].collidepoint(event.pos):
                     return STATE_SELECT_LENGTH, True
                 
-                if const.QUIT_BUTTON_RECT.collidepoint(event.pos):
+                if menu_config["QUIT_BUTTON_RECT"].collidepoint(event.pos):
                     return STATE_MAIN_MENU, False
         
-        drawing.draw_main_menu(SCREEN)
+        drawing.draw_main_menu(SCREEN, menu_config)
         pygame.display.flip()
         clock.tick(60)
 
-def run_length_selector(SCREEN, clock):
+def run_length_selector(SCREEN, clock, length_config):
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return STATE_MAIN_MENU, None
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                for i, rect in enumerate(const.LENGTH_BUTTON_RECTS):
+                for i, rect in enumerate(length_config["BUTTON_RECTS"]):
                     if rect.collidepoint(event.pos):
                         selected_length = i + 4
                         return STATE_IN_GAME, selected_length
                 
-                if not any(rect.collidepoint(event.pos) for rect in const.LENGTH_BUTTON_RECTS):
+                # if not any(rect.collidepoint(event.pos) for rect in const.LENGTH_BUTTON_RECTS):
+                #     return STATE_MAIN_MENU, None
+                if length_config["BACK_BUTTON_RECT"].collidepoint(event.pos):
                     return STATE_MAIN_MENU, None
     
-        drawing.draw_length_selector(SCREEN)
+        drawing.draw_length_selector(SCREEN, length_config)
         pygame.display.flip()
         clock.tick(60)
 
 def run_game_loop(SCREEN, clock, word_length):
+    # Generate dynamic game config
+    game_config = {}
+    
+    game_config["GRID_ROWS"] = word_length + 3
+    game_config["GRID_COLS"] = word_length
+    
+    game_area_height = const.HEIGHT - const.TOP_MARGIN_PX - const.BOTTOM_MARGIN_PX
+    
+    tile_size = game_area_height / (game_config["GRID_ROWS"] * (1 + const.MARGIN_RATIO))
+    margin = tile_size * const.MARGIN_RATIO
+    
+    game_config["TILE_SIZE"] = int(tile_size)
+    game_config["MARGIN"] = int(margin)
+    
+    grid_width = (word_length * tile_size) + ((word_length - 1) * margin)
+    game_config["START_X"] = int((const.WIDTH - grid_width) // 2)
+    game_config["START_Y"] = const.TOP_MARGIN_PX
+    
+    key_width = const.KEY_WIDTH
+    key_height = const.KEY_HEIGHT
+    game_config["KEY_WIDTH"] = int(key_width)
+    game_config["KEY_HEIGHT"] = int(key_height)
+    game_config["SPECIAL_KEY_WIDTH"] = int(const.SPECIAL_KEY_WIDTH)
+    game_config["KEY_MARGIN"] = const.KEY_MARGIN
+    game_config["KEYBOARD_START_Y"] = const.TOP_MARGIN_PX + (tile_size + margin) * game_config["GRID_ROWS"]
+    
+    game_config["HINT_BUTTON_RECT"] = pygame.Rect(const.WIDTH - 220, 30, 200, 80)
+    game_config["BACK_BUTTON_RECT"] = pygame.Rect(20, const.HEIGHT - 100, 200, 80)
+    
+    # Game core initialization
     word_list = game_logic.load_word_list(word_length)
     if not word_list:
         print(f"Error: word_list_{word_length}.txt not found.")
         return STATE_MAIN_MENU
 
-    key_rects = drawing.create_key_rects()
+    key_rects = drawing.create_key_rects(game_config)
 
     (start_word, target_word, grid_data, grid_results, 
     current_row, current_col,
     game_over, did_win, key_status,
-    hints_left) = game_logic.reset_game(word_list, word_length)
+    hints_left) = game_logic.reset_game(word_list, word_length, game_config)
     
     while True:
         for event in pygame.event.get():
@@ -96,23 +135,22 @@ def run_game_loop(SCREEN, clock, word_length):
                 return STATE_MAIN_MENU
             
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if const.BACK_BUTTON_RECT.collidepoint(event.pos):
+                if game_config["BACK_BUTTON_RECT"].collidepoint(event.pos):
                     return STATE_MAIN_MENU
                 
             if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
-                if const.HINT_BUTTON_RECT.collidepoint(event.pos) and hints_left > 0:
+                if game_config["HINT_BUTTON_RECT"].collidepoint(event.pos) and hints_left > 0:
                     previous_word = "".join(grid_data[current_row - 1])
                     hint_word = game_logic.find_next_step(previous_word, target_word, word_list)
                     
                     if hint_word:
                         hints_left -= 1
-                        
+                        grid_data[current_row] = [""] * game_config["GRID_COLS"]
                         grid_data[current_row] = list(hint_word)
+                        current_col = game_config["GRID_COLS"]
                         
-                        enter_event = pygame.event.Event(pygame.KEYDOWN, key = pygame.K_RETURN)
-                        pygame.event.post(enter_event)
-                
-                else:    
+                elif not any([game_config["HINT_BUTTON_RECT"].collidepoint(event.pos),
+                              game_config["BACK_BUTTON_RECT"].collidepoint(event.pos)]):
                     for char, rect in key_rects.items():
                         # Check if clicking position collides with key's rect
                         if rect.collidepoint(event.pos):
@@ -128,7 +166,6 @@ def run_game_loop(SCREEN, clock, word_length):
                             pygame.event.post(key_event)
                                         
             if event.type == pygame.KEYDOWN:
-                
                 # Player pressed BACKSPACE:
                 if event.key == pygame.K_BACKSPACE and not game_over:
                     if current_col > 0:
@@ -138,10 +175,7 @@ def run_game_loop(SCREEN, clock, word_length):
                 # Player pressed ENTER
                 elif event.key == pygame.K_RETURN:
                     if game_over:
-                        (start_word, target_word, grid_data, grid_results, 
-                        current_row, current_col, 
-                        game_over, did_win, key_status,
-                        hints_left) = game_logic.reset_game(word_list, word_length)
+                        return STATE_MAIN_MENU
                         
                     elif current_col == word_length:                        
                         # Get the entered guess word
@@ -165,7 +199,7 @@ def run_game_loop(SCREEN, clock, word_length):
                             if new_guess == target_word:
                                 game_over = True
                                 did_win = True
-                            elif current_row == const.GRID_ROWS - 1:
+                            elif current_row == game_config["GRID_ROWS"] - 1:
                                 game_over = True
                                 did_win = False
                             else:
@@ -182,15 +216,15 @@ def run_game_loop(SCREEN, clock, word_length):
         
         SCREEN.fill(const.BLACK)
         
-        drawing.draw_target_display(SCREEN, start_word, target_word)
-        drawing.draw_hint_button(SCREEN, hints_left)
-        drawing.draw_back_button(SCREEN)        
+        drawing.draw_target_display(SCREEN, start_word, target_word, game_config)
+        drawing.draw_hint_button(SCREEN, hints_left, game_config)
+        drawing.draw_back_button(SCREEN, game_config)        
 
-        drawing.draw_grid(SCREEN, grid_data, grid_results)
-        drawing.draw_keyboard(SCREEN, key_rects, key_status)
+        drawing.draw_grid(SCREEN, grid_data, grid_results, game_config)
+        drawing.draw_keyboard(SCREEN, key_rects, key_status, game_config)
         
         if game_over:
-            drawing.draw_game_over_screen(SCREEN, did_win, target_word)
+            drawing.draw_game_over_screen(SCREEN, did_win, target_word, game_config)
         
         pygame.display.flip()
         clock.tick(60)

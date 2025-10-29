@@ -14,6 +14,10 @@ TILE_BORDER_COLOR = (129,131,132)
 LETTER_COLOR = (248,248,248)
 KEY_COLOR = (129,131,132)
 
+KEYBOARD_LAYOUT = ["Q W E R T Y U I O P".split(), 
+                   "A S D F G H J K L".split(),
+                   ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "DEL"]]
+
 # Tiles
 GRID_ROWS = 6
 TILE_SIZE = 100
@@ -26,40 +30,15 @@ KEY_HEIGHT = 75
 KEY_MARGIN = 6
 SPECIAL_KEY_WIDTH = 90
 
-KEYBOARD_LAYOUT = ["Q W E R T Y U I O P".split(), 
-                   "A S D F G H J K L".split(),
-                   ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "DEL"]]
-
-KEYBOARD_START_Y = 750
-
 # --- Font Sizes ---
 LETTER_FONT_SIZE = 60
 KEY_FONT_SIZE = 30
+SPECIAL_KEY_FONT_SIZE = 20
 MESSAGE_FONT_SIZE = 40
-
-# Hint button
-HINT_BUTTON_RECT = pygame.Rect(WIDTH - 150, 20, 130, 60)
+TARGET_FONT_SIZE = 30
 HINT_FONT_SIZE = 24
-
-# Menu buttons
-PLAY_BUTTON_RECT = pygame.Rect(WIDTH // 2 - 150, 300, 300, 100)
-QUIT_BUTTON_RECT = pygame.Rect(WIDTH // 2 - 150, 420, 300, 100)
-BACK_BUTTON_RECT = pygame.Rect(20, HEIGHT - 80, 100, 60)
-
-# Length Selector
-LENGTH_BUTTON_RECTS = []
-BUTTON_COLS = 3
-BUTTON_ROWS = 4
-BUTTON_WIDTH = 120
-BUTTON_HEIGHT = 80
-BUTTON_MARGIN = 20
-TOTAL_WIDTH = (BUTTON_COLS * BUTTON_WIDTH) + ((BUTTON_COLS - 1) * BUTTON_MARGIN)
-START_X_OFFSET = (WIDTH - TOTAL_WIDTH) // 2
-START_Y_OFFSET = 300
-
-for i in range(BUTTON_ROWS):
-    for j in range(BUTTON_COLS):
-        x = START_X_OFFSET + j * (BUTTON_WIDTH + BUTTON_MARGIN)
-        y = START_Y_OFFSET + i * (BUTTON_HEIGHT + BUTTON_MARGIN)
-        rect = pygame.Rect(x, y, BUTTON_WIDTH, BUTTON_HEIGHT)
-        LENGTH_BUTTON_RECTS.append(rect)
+        
+# Layout Ratios
+TOP_MARGIN_PX = 150
+BOTTOM_MARGIN_PX = 300
+MARGIN_RATIO = 0.1
